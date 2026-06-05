@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/stores/user';
+import { ApiError, ERROR_CODES } from './errors';
 
 const api = axios.create({
   baseURL: '/api',
@@ -16,19 +17,20 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (err) => Promise.reject(err)
+  (err) => Promise.reject(ApiError.fromAxiosError(err))
 );
 
 api.interceptors.response.use(
   (res) => {
     const { code, message, data } = res.data;
-    if (code === 0) return data;
+    if (code === ERROR_CODES.SUCCESS) return data;
+    const apiError = ApiError.fromResponseData({ code, message, data });
     ElMessage.error(message || '请求失败');
-    return Promise.reject(new Error(message));
+    return Promise.reject(apiError);
   },
   (err) => {
-    const msg = err.response?.data?.message || err.message || '网络异常';
-    if (err.response?.status === 401) {
+    const apiError = err instanceof ApiError ? err : ApiError.fromAxiosError(err);
+    if (apiError.code === ERROR_CODES.UNAUTHORIZED || err.response?.status === 401) {
       try {
         const store = useUserStore();
         store.logout();
@@ -37,9 +39,9 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     } else {
-      ElMessage.error(msg);
+      ElMessage.error(apiError.message);
     }
-    return Promise.reject(err);
+    return Promise.reject(apiError);
   }
 );
 
