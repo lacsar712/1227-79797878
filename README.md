@@ -10,6 +10,8 @@
 
 ## 🚀 启动指南 (How to Run)
 
+### 方式一：一键启动（推荐）
+
 1. 确保 Docker Desktop 已启动
 2. 在项目根目录执行：
 
@@ -20,6 +22,21 @@ docker compose up --build
 3. 等待容器启动完成（首次构建约 2-5 分钟）
 4. 访问前端页面
 
+### 方式二：自定义配置启动
+
+1. 复制环境变量模板文件：
+
+```bash
+cp .env.example .env
+```
+
+2. 根据需要修改 `.env` 文件中的配置
+3. 启动服务：
+
+```bash
+docker compose up --build
+```
+
 ## 🔗 服务地址 (Services)
 
 | 服务 | 地址 |
@@ -27,6 +44,51 @@ docker compose up --build
 | **Frontend** | http://localhost:3227 |
 | **Backend API** | http://localhost:8227 |
 | **Database** | localhost:3307 (user: ecommerce / pass: ecommerce123) |
+
+## ⚙️ 环境变量配置 (Environment Variables)
+
+项目所有配置均通过环境变量管理，可在 `.env` 文件中进行自定义。
+
+### MySQL 数据库配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `MYSQL_ROOT_PASSWORD` | `root` | MySQL root 用户密码 |
+| `MYSQL_DATABASE` | `ecommerce` | 数据库名称 |
+| `MYSQL_USER` | `ecommerce` | 数据库用户名 |
+| `MYSQL_PASSWORD` | `ecommerce123` | 数据库用户密码 |
+| `MYSQL_HOST_PORT` | `3307` | 主机映射端口（避免与本地 MySQL 冲突） |
+
+### 后端数据库连接配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `DB_HOST` | `db` | 数据库主机地址（Docker 内部服务名） |
+| `DB_PORT` | `3306` | 数据库端口 |
+| `DB_NAME` | `ecommerce` | 数据库名称（需与 MYSQL_DATABASE 一致） |
+| `DB_USER` | `ecommerce` | 数据库用户名（需与 MYSQL_USER 一致） |
+| `DB_PASSWORD` | `ecommerce123` | 数据库密码（需与 MYSQL_PASSWORD 一致） |
+
+### JWT 配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `JWT_SECRET` | `ecommerce-jwt-secret-2024` | JWT 签名密钥，生产环境请务必修改为复杂随机字符串 |
+
+### 服务端口配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `BACKEND_PORT` | `8227` | 后端服务内部端口 |
+| `BACKEND_HOST_PORT` | `8227` | 后端服务主机映射端口 |
+| `FRONTEND_HOST_PORT` | `3227` | 前端服务主机映射端口 |
+
+### Node 运行环境
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `NODE_ENV` | `production` | Node 运行环境（development/production） |
+| `LOG_LEVEL` | `info` | 日志级别（debug/info/warn/error） |
 
 ## 🧪 测试账号
 

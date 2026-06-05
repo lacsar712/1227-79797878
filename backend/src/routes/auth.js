@@ -11,7 +11,7 @@ const { getLevelProgress, MEMBER_LEVELS } = require('../config/memberLevels');
 const router = express.Router();
 
 const generateToken = (userId) =>
-  jwt.sign({ userId }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
 router.post(
   '/register',

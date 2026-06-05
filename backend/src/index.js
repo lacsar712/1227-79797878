@@ -20,7 +20,7 @@ const liveStreamsRoutes = require('./routes/liveStreams');
 const { router: couponsRoutes, checkAndUpdateExpiredCoupons } = require('./routes/coupons');
 
 const app = express();
-const PORT = process.env.PORT || 8227;
+const PORT = process.env.PORT;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
