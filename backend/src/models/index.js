@@ -12,6 +12,8 @@ const GroupBuy = require('./GroupBuy');
 const GroupBuyMember = require('./GroupBuyMember');
 const GiftCard = require('./GiftCard');
 const GiftCardUsage = require('./GiftCardUsage');
+const StockSubscription = require('./StockSubscription');
+const Notification = require('./Notification');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
 User.hasMany(GiftCard, { foreignKey: 'user_id' });
@@ -61,6 +63,14 @@ GroupBuy.hasMany(Order, { foreignKey: 'group_buy_id' });
 Order.belongsTo(GroupBuy, { foreignKey: 'group_buy_id' });
 Order.belongsTo(GroupBuyMember, { foreignKey: 'group_buy_member_id' });
 
+User.hasMany(StockSubscription, { foreignKey: 'user_id' });
+StockSubscription.belongsTo(User, { foreignKey: 'user_id' });
+Product.hasMany(StockSubscription, { foreignKey: 'product_id' });
+StockSubscription.belongsTo(Product, { foreignKey: 'product_id' });
+
+User.hasMany(Notification, { foreignKey: 'user_id' });
+Notification.belongsTo(User, { foreignKey: 'user_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -75,5 +85,7 @@ module.exports = {
   GroupBuy,
   GroupBuyMember,
   GiftCard,
-  GiftCardUsage
+  GiftCardUsage,
+  StockSubscription,
+  Notification
 };

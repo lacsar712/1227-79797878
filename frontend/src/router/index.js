@@ -87,6 +87,12 @@ const routes = [
     name: 'GiftCard',
     component: () => import('@/views/GiftCard.vue'),
     meta: { title: '礼品卡中心', auth: true }
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('@/views/Notifications.vue'),
+    meta: { title: '消息通知', auth: true }
   }
 ];
 

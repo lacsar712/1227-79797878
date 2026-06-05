@@ -34,26 +34,53 @@
           </div>
 
           <div class="meta">已售 {{ product.sales_count || 0 }} 件 · 库存 {{ product.stock }} 件</div>
-          <div class="quantity-row">
-            <span>数量</span>
-            <el-input-number v-model="quantity" :min="1" :max="product.stock" />
-          </div>
-          <div class="actions">
-            <el-button v-if="product.group_buy" type="success" size="large" @click="openGroupBuyDialog" :disabled="!userStore.isLoggedIn">
-              <el-icon><UserFilled /></el-icon>
-              发起拼团
-            </el-button>
-            <el-button type="primary" size="large" @click="addToCart" :disabled="!userStore.isLoggedIn">
-              <el-icon><ShoppingCart /></el-icon>
-              加入购物车
-            </el-button>
-            <el-button size="large" @click="buyNow" :disabled="!userStore.isLoggedIn">
-              立即购买
-            </el-button>
-          </div>
-          <el-alert v-if="!userStore.isLoggedIn" type="info" show-icon :closable="false" style="margin-top: 16px">
-            请先 <router-link to="/login">登录</router-link> 后加入购物车或购买
-          </el-alert>
+          <template v-if="product.stock > 0">
+            <div class="quantity-row">
+              <span>数量</span>
+              <el-input-number v-model="quantity" :min="1" :max="product.stock" />
+            </div>
+            <div class="actions">
+              <el-button v-if="product.group_buy" type="success" size="large" @click="openGroupBuyDialog" :disabled="!userStore.isLoggedIn">
+                <el-icon><UserFilled /></el-icon>
+                发起拼团
+              </el-button>
+              <el-button type="primary" size="large" @click="addToCart" :disabled="!userStore.isLoggedIn">
+                <el-icon><ShoppingCart /></el-icon>
+                加入购物车
+              </el-button>
+              <el-button size="large" @click="buyNow" :disabled="!userStore.isLoggedIn">
+                立即购买
+              </el-button>
+            </div>
+            <el-alert v-if="!userStore.isLoggedIn" type="info" show-icon :closable="false" style="margin-top: 16px">
+              请先 <router-link to="/login">登录</router-link> 后加入购物车或购买
+            </el-alert>
+          </template>
+          <template v-else>
+            <div class="out-of-stock-tip">
+              <el-icon :size="20" color="#f59e0b"><WarningFilled /></el-icon>
+              <span>商品暂时缺货</span>
+            </div>
+            <div class="actions">
+              <el-button
+                type="warning"
+                size="large"
+                :loading="subscriptionLoading"
+                @click="handleSubscribe"
+                :class="{ 'btn-subscribed': isSubscribed }"
+              >
+                <el-icon v-if="isSubscribed"><BellFilled /></el-icon>
+                <el-icon v-else><Bell /></el-icon>
+                {{ isSubscribed ? '取消订阅' : '到货通知我' }}
+              </el-button>
+            </div>
+            <el-alert v-if="!userStore.isLoggedIn" type="info" show-icon :closable="false" style="margin-top: 16px">
+              请先 <router-link to="/login">登录</router-link> 后订阅到货通知
+            </el-alert>
+            <el-alert v-if="isSubscribed" type="success" show-icon :closable="false" style="margin-top: 16px">
+              已成功订阅，商品到货后将第一时间通知您。您可以在 <router-link to="/notifications">消息中心</router-link> 查看通知。
+            </el-alert>
+          </template>
         </div>
       </div>
     </template>
@@ -111,8 +138,8 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ShoppingCart, UserFilled } from '@element-plus/icons-vue';
-import { productsApi, addressesApi, groupBuyApi } from '@/api';
+import { ShoppingCart, UserFilled, Bell, BellFilled, WarningFilled } from '@element-plus/icons-vue';
+import { productsApi, addressesApi, groupBuyApi, stockSubscriptionApi } from '@/api';
 import { useUserStore } from '@/stores/user';
 import { useCartStore } from '@/stores/cart';
 
@@ -132,16 +159,53 @@ const groupBuyForm = ref({
   address_id: null,
   payment_method: 'wechat'
 });
+const isSubscribed = ref(false);
+const subscriptionLoading = ref(false);
 
 onMounted(async () => {
   try {
     product.value = await productsApi.detail(route.params.id);
+    if (product.value && product.value.stock === 0 && userStore.isLoggedIn) {
+      await loadSubscriptionStatus();
+    }
   } catch {
     product.value = null;
   } finally {
     loading.value = false;
   }
 });
+
+async function loadSubscriptionStatus() {
+  try {
+    const res = await stockSubscriptionApi.getStatus(route.params.id);
+    isSubscribed.value = res.subscribed;
+  } catch (e) {
+    isSubscribed.value = false;
+  }
+}
+
+async function handleSubscribe() {
+  if (!userStore.isLoggedIn) {
+    router.push('/login');
+    return;
+  }
+  subscriptionLoading.value = true;
+  try {
+    if (isSubscribed.value) {
+      await stockSubscriptionApi.unsubscribe(route.params.id);
+      isSubscribed.value = false;
+      ElMessage.success('已取消订阅');
+    } else {
+      await stockSubscriptionApi.subscribe(route.params.id);
+      isSubscribed.value = true;
+      ElMessage.success('订阅成功，商品到货后将通知您');
+    }
+  } catch (e) {
+    // message shown by interceptor
+  } finally {
+    subscriptionLoading.value = false;
+  }
+}
 
 async function addToCart() {
   if (!userStore.isLoggedIn) {
@@ -305,6 +369,23 @@ async function createGroupBuy() {
   border-radius: 4px;
 }
 .meta { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+.out-of-stock-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  color: #d97706;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+.btn-subscribed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-color: #10b981 !important;
+}
 .quantity-row {
   display: flex;
   align-items: center;

@@ -12,6 +12,8 @@ const addressesRoutes = require('./routes/addresses');
 const ordersRoutes = require('./routes/orders');
 const { router: groupBuyRoutes, checkExpiredGroupBuys } = require('./routes/groupBuy');
 const giftCardsRoutes = require('./routes/giftCards');
+const { router: stockSubscriptionsRoutes } = require('./routes/stockSubscriptions');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 8227;
@@ -27,6 +29,8 @@ app.use('/api/addresses', addressesRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/group-buy', groupBuyRoutes);
 app.use('/api/gift-cards', giftCardsRoutes);
+app.use('/api/stock-subscriptions', stockSubscriptionsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

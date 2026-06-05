@@ -57,3 +57,18 @@ export const giftCardApi = {
   bind: (cardNo) => api.post('/gift-cards/bind', { card_no: cardNo }),
   getDetail: (id) => api.get(`/gift-cards/${id}`)
 };
+
+export const stockSubscriptionApi = {
+  subscribe: (productId) => api.post(`/stock-subscriptions/${productId}/subscribe`),
+  unsubscribe: (productId) => api.delete(`/stock-subscriptions/${productId}/subscribe`),
+  getStatus: (productId) => api.get(`/stock-subscriptions/${productId}/status`),
+  getMySubscriptions: (params) => api.get('/stock-subscriptions/my', { params })
+};
+
+export const notificationsApi = {
+  list: (params) => api.get('/notifications', { params }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: (type) => api.put('/notifications/read-all', { params: { type } }),
+  remove: (id) => api.delete(`/notifications/${id}`)
+};

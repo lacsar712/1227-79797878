@@ -29,6 +29,11 @@
           <el-icon :size="24"><Document /></el-icon>
           <span>我的订单</span>
         </router-link>
+        <router-link to="/notifications" class="link-item notification-link">
+          <el-icon :size="24"><Bell /></el-icon>
+          <span>消息通知</span>
+          <el-badge v-if="unreadCount > 0" :value="unreadCount" :max="99" class="notification-badge" />
+        </router-link>
         <router-link to="/gift-card" class="link-item">
           <el-icon :size="24"><Wallet /></el-icon>
           <span>礼品卡</span>
@@ -47,18 +52,30 @@
 </template>
 
 <script setup>
-import { Document, Location, ShoppingCart, Wallet, ArrowRight } from '@element-plus/icons-vue';
+import { ref, onMounted } from 'vue';
+import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useGiftCardStore } from '@/stores/giftCard';
-import { onMounted } from 'vue';
+import { notificationsApi } from '@/api';
 
 const userStore = useUserStore();
 const giftCardStore = useGiftCardStore();
+const unreadCount = ref(0);
 
 onMounted(async () => {
   await userStore.fetchUser();
   await giftCardStore.fetchMyCards();
+  await loadUnreadCount();
 });
+
+async function loadUnreadCount() {
+  try {
+    const res = await notificationsApi.getUnreadCount();
+    unreadCount.value = res.unread_count || 0;
+  } catch (e) {
+    unreadCount.value = 0;
+  }
+}
 </script>
 
 <style scoped>
@@ -113,7 +130,7 @@ onMounted(async () => {
 }
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
 .link-item {
@@ -125,13 +142,22 @@ onMounted(async () => {
   background: #f8fafc;
   border-radius: 12px;
   transition: all 0.2s;
+  position: relative;
 }
 .link-item:hover {
   background: #eef2ff;
   color: #6366f1;
 }
+.notification-link {
+  position: relative;
+}
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
 @media (max-width: 600px) {
-  .quick-links { grid-template-columns: repeat(2, 1fr); }
+  .quick-links { grid-template-columns: repeat(3, 1fr); }
   .balance-value { font-size: 24px; }
 }
 </style>
