@@ -16,6 +16,8 @@ const StockSubscription = require('./StockSubscription');
 const Notification = require('./Notification');
 const SupportTicket = require('./SupportTicket');
 const SupportTicketReply = require('./SupportTicketReply');
+const Wishlist = require('./Wishlist');
+const WishlistItem = require('./WishlistItem');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
 User.hasMany(GiftCard, { foreignKey: 'user_id' });
@@ -80,6 +82,13 @@ SupportTicket.hasMany(SupportTicketReply, { foreignKey: 'ticket_id', as: 'replie
 SupportTicketReply.belongsTo(SupportTicket, { foreignKey: 'ticket_id' });
 SupportTicketReply.belongsTo(User, { foreignKey: 'user_id' });
 
+User.hasMany(Wishlist, { foreignKey: 'user_id' });
+Wishlist.belongsTo(User, { foreignKey: 'user_id' });
+
+Wishlist.hasMany(WishlistItem, { foreignKey: 'wishlist_id' });
+WishlistItem.belongsTo(Wishlist, { foreignKey: 'wishlist_id' });
+WishlistItem.belongsTo(Product, { foreignKey: 'product_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -98,5 +107,7 @@ module.exports = {
   StockSubscription,
   Notification,
   SupportTicket,
-  SupportTicketReply
+  SupportTicketReply,
+  Wishlist,
+  WishlistItem
 };

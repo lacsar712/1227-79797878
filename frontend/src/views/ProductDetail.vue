@@ -66,6 +66,10 @@
               <el-button size="large" @click="buyNow" :disabled="!userStore.isLoggedIn">
                 立即购买
               </el-button>
+              <el-button size="large" @click="openWishlistDialog" :disabled="!userStore.isLoggedIn">
+                <el-icon><Collection /></el-icon>
+                加入清单
+              </el-button>
             </div>
             <el-alert v-if="!userStore.isLoggedIn" type="info" show-icon :closable="false" style="margin-top: 16px">
               请先 <router-link to="/login">登录</router-link> 后加入购物车或购买
@@ -146,6 +150,77 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="wishlistDialogVisible" title="加入清单" width="400px" @close="resetWishlistDialog">
+      <div v-loading="wishlistLoading">
+        <div v-if="!createNewWishlist">
+          <div class="wishlist-list">
+            <div
+              v-for="w in wishlists" :key="w.id"
+              :class="['wishlist-option', { active: selectedWishlistId === w.id }]"
+              @click="selectedWishlistId = w.id"
+            >
+              <div class="option-icon">
+                <el-icon><Collection /></el-icon>
+              </div>
+              <div class="option-info">
+                <div class="option-name">{{ w.name }}</div>
+                <div class="option-count">{{ w.item_count }} 件商品</div>
+              </div>
+              <el-radio :model-value="selectedWishlistId" :value="w.id" />
+            </div>
+          </div>
+          <div v-if="wishlists.length === 0" class="empty-wishlist">
+            <el-empty description="还没有创建清单" />
+          </div>
+          <div class="create-new-btn">
+            <el-button type="primary" link @click="createNewWishlist = true">
+              <el-icon><Plus /></el-icon>
+              创建新清单
+            </el-button>
+          </div>
+        </div>
+        <div v-else>
+          <el-form>
+            <el-form-item label="清单名称">
+              <el-input
+                v-model="newWishlistName"
+                placeholder="请输入清单名称"
+                maxlength="50"
+                show-word-limit
+                @keyup.enter="handleCreateAndAdd"
+              />
+            </el-form-item>
+          </el-form>
+          <div class="create-actions">
+            <el-button @click="createNewWishlist = false">返回</el-button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="wishlistDialogVisible = false">取消</el-button>
+        <template v-if="!createNewWishlist">
+          <el-button
+            type="primary"
+            @click="handleAddToWishlist"
+            :disabled="!selectedWishlistId"
+            :loading="submitting"
+          >
+            加入
+          </el-button>
+        </template>
+        <template v-else>
+          <el-button
+            type="primary"
+            @click="handleCreateAndAdd"
+            :disabled="!newWishlistName.trim()"
+            :loading="submitting"
+          >
+            创建并加入
+          </el-button>
+        </template>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -153,15 +228,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ShoppingCart, UserFilled, Bell, BellFilled, WarningFilled } from '@element-plus/icons-vue';
-import { productsApi, addressesApi, groupBuyApi, stockSubscriptionApi } from '@/api';
+import { ShoppingCart, UserFilled, Bell, BellFilled, WarningFilled, Collection, Plus } from '@element-plus/icons-vue';
+import { productsApi, addressesApi, groupBuyApi, stockSubscriptionApi, wishlistApi } from '@/api';
 import { useUserStore } from '@/stores/user';
 import { useCartStore } from '@/stores/cart';
+import { useWishlistStore } from '@/stores/wishlist';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const cartStore = useCartStore();
+const wishlistStore = useWishlistStore();
 
 const product = ref(null);
 const loading = ref(true);
@@ -191,6 +268,12 @@ const groupBuyForm = ref({
 });
 const isSubscribed = ref(false);
 const subscriptionLoading = ref(false);
+const wishlistDialogVisible = ref(false);
+const wishlistLoading = ref(false);
+const wishlists = ref([]);
+const createNewWishlist = ref(false);
+const newWishlistName = ref('');
+const selectedWishlistId = ref(null);
 
 onMounted(async () => {
   try {
@@ -294,6 +377,62 @@ async function createGroupBuy() {
     router.push(`/group/${result.group_buy.id}`);
   } catch (e) {
     // message shown by interceptor
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function openWishlistDialog() {
+  if (!userStore.isLoggedIn) {
+    router.push('/login');
+    return;
+  }
+  createNewWishlist.value = false;
+  selectedWishlistId.value = null;
+  newWishlistName.value = '';
+  wishlistDialogVisible.value = true;
+  await loadWishlists();
+}
+
+async function loadWishlists() {
+  wishlistLoading.value = true;
+  try {
+    wishlists.value = await wishlistStore.fetchWishlists();
+  } finally {
+    wishlistLoading.value = false;
+  }
+}
+
+function resetWishlistDialog() {
+  createNewWishlist.value = false;
+  selectedWishlistId.value = null;
+  newWishlistName.value = '';
+}
+
+async function handleAddToWishlist() {
+  if (!selectedWishlistId.value) return;
+  submitting.value = true;
+  try {
+    await wishlistStore.addItem(selectedWishlistId.value, product.value.id);
+    ElMessage.success('已加入清单');
+    wishlistDialogVisible.value = false;
+  } catch (e) {
+    // error handled by interceptor
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function handleCreateAndAdd() {
+  if (!newWishlistName.value.trim()) return;
+  submitting.value = true;
+  try {
+    const result = await wishlistStore.create(newWishlistName.value.trim());
+    await wishlistStore.addItem(result.id, product.value.id);
+    ElMessage.success('已创建清单并加入商品');
+    wishlistDialogVisible.value = false;
+  } catch (e) {
+    // error handled by interceptor
   } finally {
     submitting.value = false;
   }
@@ -480,5 +619,60 @@ async function createGroupBuy() {
 }
 @media (max-width: 768px) {
   .product-detail { grid-template-columns: 1fr; }
+}
+.wishlist-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.wishlist-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  background: #f8fafc;
+}
+.wishlist-option:hover {
+  background: #eef2ff;
+}
+.wishlist-option.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+.option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.option-info {
+  flex: 1;
+}
+.option-name {
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+.option-count {
+  font-size: 13px;
+  color: #64748b;
+}
+.create-new-btn {
+  margin-top: 12px;
+  text-align: center;
+}
+.create-actions {
+  margin-top: 8px;
+}
+.empty-wishlist {
+  padding: 20px 0;
 }
 </style>

@@ -111,6 +111,24 @@ const routes = [
     name: 'SupportTicketDetail',
     component: () => import('@/views/SupportTicketDetail.vue'),
     meta: { title: '工单详情', auth: true }
+  },
+  {
+    path: '/profile/wishlists',
+    name: 'Wishlists',
+    component: () => import('@/views/Wishlists.vue'),
+    meta: { title: '我的清单', auth: true }
+  },
+  {
+    path: '/profile/wishlist/:id',
+    name: 'WishlistDetail',
+    component: () => import('@/views/WishlistDetail.vue'),
+    meta: { title: '清单详情', auth: true }
+  },
+  {
+    path: '/wishlist/:shareCode',
+    name: 'WishlistShare',
+    component: () => import('@/views/WishlistShare.vue'),
+    meta: { title: '购物清单' }
   }
 ];
 

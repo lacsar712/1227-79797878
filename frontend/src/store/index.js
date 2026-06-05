@@ -3,13 +3,15 @@ import { userModule } from '@/stores/user';
 import { cartModule } from '@/stores/cart';
 import { confirmModule } from '@/stores/confirm';
 import { giftCardModule } from '@/stores/giftCard';
+import { wishlistModule } from '@/stores/wishlist';
 
 const store = createStore({
   modules: {
     user: userModule,
     cart: cartModule,
     confirm: confirmModule,
-    giftCard: giftCardModule
+    giftCard: giftCardModule,
+    wishlist: wishlistModule
   },
   plugins: [
     (store) => {

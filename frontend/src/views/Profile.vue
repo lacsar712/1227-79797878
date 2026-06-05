@@ -110,6 +110,10 @@
           <el-icon :size="24"><ShoppingCart /></el-icon>
           <span>购物车</span>
         </router-link>
+        <router-link to="/profile/wishlists" class="link-item">
+          <el-icon :size="24"><Collection /></el-icon>
+          <span>我的清单</span>
+        </router-link>
       </div>
     </el-card>
   </div>
@@ -117,7 +121,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell, CircleCheck } from '@element-plus/icons-vue';
+import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell, CircleCheck, Collection } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useGiftCardStore } from '@/stores/giftCard';
 import { notificationsApi } from '@/api';
@@ -326,7 +330,7 @@ async function loadUnreadCount() {
 }
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
 }
 .link-item {
@@ -357,6 +361,7 @@ async function loadUnreadCount() {
 }
 @media (max-width: 600px) {
   .quick-links { grid-template-columns: repeat(3, 1fr); }
+  .quick-links .link-item:last-child { grid-column: span 3; }
   .balance-value { font-size: 24px; }
   .name-row { flex-direction: column; align-items: flex-start; }
   .member-badge { margin-top: 4px; }
