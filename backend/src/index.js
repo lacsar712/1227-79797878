@@ -10,6 +10,7 @@ const productsRoutes = require('./routes/products');
 const cartRoutes = require('./routes/cart');
 const addressesRoutes = require('./routes/addresses');
 const ordersRoutes = require('./routes/orders');
+const { router: groupBuyRoutes, checkExpiredGroupBuys } = require('./routes/groupBuy');
 
 const app = express();
 const PORT = process.env.PORT || 8227;
@@ -23,6 +24,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/group-buy', groupBuyRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -41,6 +43,12 @@ async function start() {
     logger.info('Database synced');
     const seed = require('./seed');
     await seed.run();
+
+    setInterval(() => {
+      checkExpiredGroupBuys();
+    }, 60 * 1000);
+    logger.info('Group buy expiration checker started');
+
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`Server running on port ${PORT}`);
     });

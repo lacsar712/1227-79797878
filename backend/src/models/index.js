@@ -7,6 +7,9 @@ const CartItem = require('./CartItem');
 const Address = require('./Address');
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
+const GroupBuyActivity = require('./GroupBuyActivity');
+const GroupBuy = require('./GroupBuy');
+const GroupBuyMember = require('./GroupBuyMember');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
 Address.belongsTo(User, { foreignKey: 'user_id' });
@@ -29,6 +32,23 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 OrderItem.belongsTo(Product, { foreignKey: 'product_id' });
 Order.belongsTo(Address, { foreignKey: 'address_id' });
 
+Product.hasMany(GroupBuyActivity, { foreignKey: 'product_id' });
+GroupBuyActivity.belongsTo(Product, { foreignKey: 'product_id' });
+
+GroupBuyActivity.hasMany(GroupBuy, { foreignKey: 'group_buy_activity_id' });
+GroupBuy.belongsTo(GroupBuyActivity, { foreignKey: 'group_buy_activity_id' });
+GroupBuy.belongsTo(Product, { foreignKey: 'product_id' });
+GroupBuy.belongsTo(User, { foreignKey: 'leader_id', as: 'leader' });
+
+GroupBuy.hasMany(GroupBuyMember, { foreignKey: 'group_buy_id' });
+GroupBuyMember.belongsTo(GroupBuy, { foreignKey: 'group_buy_id' });
+GroupBuyMember.belongsTo(User, { foreignKey: 'user_id' });
+GroupBuyMember.belongsTo(Order, { foreignKey: 'order_id' });
+
+GroupBuy.hasMany(Order, { foreignKey: 'group_buy_id' });
+Order.belongsTo(GroupBuy, { foreignKey: 'group_buy_id' });
+Order.belongsTo(GroupBuyMember, { foreignKey: 'group_buy_member_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -38,5 +58,8 @@ module.exports = {
   CartItem,
   Address,
   Order,
-  OrderItem
+  OrderItem,
+  GroupBuyActivity,
+  GroupBuy,
+  GroupBuyMember
 };

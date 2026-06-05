@@ -40,6 +40,12 @@ const Order = sequelize.define(
     },
     remark: {
       type: DataTypes.STRING(500)
+    },
+    group_buy_id: {
+      type: DataTypes.INTEGER
+    },
+    group_buy_member_id: {
+      type: DataTypes.INTEGER
     }
   },
   { tableName: 'orders' }

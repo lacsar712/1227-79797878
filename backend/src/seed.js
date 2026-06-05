@@ -1,4 +1,4 @@
-const { User, Category, Product, sequelize } = require('./models');
+const { User, Category, Product, GroupBuyActivity, Address, sequelize } = require('./models');
 const logger = require('./utils/logger');
 
 const categories = [
@@ -164,14 +164,45 @@ async function run() {
     }
 
     const user = await User.findOne({ where: { username: 'user' } });
+    let userId;
     if (!user) {
-      await User.create({
+      const newUser = await User.create({
         username: 'user',
         email: 'user@example.com',
         password: '123456',
         nickname: '测试用户'
       });
+      userId = newUser.id;
       logger.info('Test user created');
+    } else {
+      userId = user.id;
+    }
+
+    const addressCount = await Address.count({ where: { user_id: userId } });
+    if (addressCount === 0) {
+      await Address.bulkCreate([
+        {
+          user_id: userId,
+          receiver: '张三',
+          phone: '13800138000',
+          province: '北京市',
+          city: '北京市',
+          district: '朝阳区',
+          detail: '望京SOHO T1 1001室',
+          is_default: true
+        },
+        {
+          user_id: userId,
+          receiver: '李四',
+          phone: '13900139000',
+          province: '上海市',
+          city: '上海市',
+          district: '浦东新区',
+          detail: '陆家嘴金融中心 B 座 2001室',
+          is_default: false
+        }
+      ]);
+      logger.info('Test addresses created');
     }
 
     for (let i = 0; i < products.length; i++) {
@@ -189,6 +220,41 @@ async function run() {
         status: 'active'
       });
     }
+    const createdProducts = await Product.findAll();
+    const groupBuyActivities = [
+      {
+        product_id: createdProducts[0].id,
+        group_price: 299,
+        min_people: 3,
+        duration_hours: 24,
+        status: 'active'
+      },
+      {
+        product_id: createdProducts[1].id,
+        group_price: 999,
+        min_people: 2,
+        duration_hours: 48,
+        status: 'active'
+      },
+      {
+        product_id: createdProducts[4].id,
+        group_price: 59,
+        min_people: 5,
+        duration_hours: 12,
+        status: 'active'
+      },
+      {
+        product_id: createdProducts[7].id,
+        group_price: 49,
+        min_people: 3,
+        duration_hours: 24,
+        status: 'active'
+      }
+    ];
+
+    await GroupBuyActivity.bulkCreate(groupBuyActivities);
+    logger.info('Group buy activities seed completed');
+
     logger.info('Seed completed');
   } catch (err) {
     logger.error('Seed failed:', err);

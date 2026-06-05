@@ -75,6 +75,12 @@ const routes = [
     name: 'OrderDetail',
     component: () => import('@/views/OrderDetail.vue'),
     meta: { title: '订单详情', auth: true }
+  },
+  {
+    path: '/group/:id',
+    name: 'GroupDetail',
+    component: () => import('@/views/GroupDetail.vue'),
+    meta: { title: '拼团详情' }
   }
 ];
 

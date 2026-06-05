@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const { Product, Category } = require('../models');
+const { Product, Category, GroupBuyActivity, GroupBuy } = require('../models');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -77,7 +77,38 @@ router.get('/:id', async (req, res) => {
     if (!product || product.status !== 'active') {
       return res.status(404).json({ code: 404, message: '商品不存在' });
     }
-    res.json({ code: 0, data: product });
+
+    const now = new Date();
+    const groupBuyActivity = await GroupBuyActivity.findOne({
+      where: {
+        product_id: product.id,
+        status: 'active',
+        [Op.or]: [{ start_time: { [Op.lte]: now } }, { start_time: null }],
+        [Op.or]: [{ end_time: { [Op.gte]: now } }, { end_time: null }]
+      }
+    });
+
+    let groupBuyData = null;
+    if (groupBuyActivity) {
+      const pendingGroups = await GroupBuy.count({
+        where: {
+          group_buy_activity_id: groupBuyActivity.id,
+          status: 'pending'
+        }
+      });
+      groupBuyData = {
+        ...groupBuyActivity.toJSON(),
+        pending_groups_count: pendingGroups
+      };
+    }
+
+    res.json({
+      code: 0,
+      data: {
+        ...product.toJSON(),
+        group_buy: groupBuyData
+      }
+    });
   } catch (err) {
     logger.error('Get product detail error:', err);
     res.status(500).json({ code: 500, message: '获取商品详情失败' });
