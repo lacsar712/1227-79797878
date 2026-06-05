@@ -26,11 +26,26 @@
           </div>
 
           <div class="price-box" v-else>
-            <span class="price">¥{{ product.price }}</span>
-            <span class="orig" v-if="product.original_price">¥{{ product.original_price }}</span>
-            <span class="discount" v-if="product.original_price">
-              省{{ Math.round((1 - product.price / product.original_price) * 100) }}%
-            </span>
+            <div class="main-price-row">
+              <span class="price">¥{{ displayPrice }}</span>
+              <span class="orig" v-if="showOriginalPrice">¥{{ product.price }}</span>
+              <span class="member-tag" v-if="showMemberPrice && product.member_level">
+                {{ product.member_level.icon }} {{ product.member_level.name }}专享
+              </span>
+            </div>
+            <div class="original-row" v-if="product.original_price && !showMemberPrice">
+              <span class="orig">¥{{ product.original_price }}</span>
+              <span class="discount">
+                省{{ Math.round((1 - product.price / product.original_price) * 100) }}%
+              </span>
+            </div>
+            <div class="member-save-row" v-if="showMemberPrice && product.member_price">
+              <span class="orig">原价 ¥{{ product.price }}</span>
+              <span class="member-save">
+                会员省¥{{ (product.price - product.member_price).toFixed(2) }}
+                ({{ Math.round(product.member_discount * 10) }}折)
+              </span>
+            </div>
           </div>
 
           <div class="meta">已售 {{ product.sales_count || 0 }} 件 · 库存 {{ product.stock }} 件</div>
@@ -135,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ShoppingCart, UserFilled, Bell, BellFilled, WarningFilled } from '@element-plus/icons-vue';
@@ -151,6 +166,21 @@ const cartStore = useCartStore();
 const product = ref(null);
 const loading = ref(true);
 const quantity = ref(1);
+
+const showMemberPrice = computed(() => {
+  return userStore.isLoggedIn.value && product.value?.member_price != null && product.value.member_price < product.value.price;
+});
+
+const showOriginalPrice = computed(() => {
+  return showMemberPrice.value;
+});
+
+const displayPrice = computed(() => {
+  if (showMemberPrice.value) {
+    return product.value.member_price.toFixed(2);
+  }
+  return product.value?.price?.toFixed(2) || '0.00';
+});
 const placeholderImg = '/images/products/placeholder-600x600.png';
 const groupBuyDialogVisible = ref(false);
 const submitting = ref(false);
@@ -354,10 +384,23 @@ async function createGroupBuy() {
   font-size: 14px;
 }
 .price-box {
+  margin-bottom: 16px;
+}
+.main-price-row {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+.original-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.member-save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .price { font-size: 32px; font-weight: 700; color: #ef4444; }
 .orig { font-size: 16px; color: #94a3b8; text-decoration: line-through; }
@@ -366,6 +409,26 @@ async function createGroupBuy() {
   color: #ef4444;
   font-size: 14px;
   padding: 2px 8px;
+  border-radius: 4px;
+}
+.member-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid #fcd34d;
+}
+.member-save {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 10px;
   border-radius: 4px;
 }
 .meta { color: #64748b; font-size: 14px; margin-bottom: 24px; }

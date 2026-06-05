@@ -60,8 +60,11 @@
               <div class="product-info">
                 <h3>{{ p.name }}</h3>
                 <div class="price-row">
-                  <span class="price">¥{{ p.price }}</span>
-                  <span class="orig" v-if="p.original_price">¥{{ p.original_price }}</span>
+                  <span class="price">¥{{ displayPrice(p) }}</span>
+                  <span class="orig" v-if="showOriginalPrice(p)">¥{{ p.price }}</span>
+                </div>
+                <div class="member-badge-mini" v-if="p.member_price != null && p.member_price < p.price">
+                  {{ p.member_level?.icon }} 会员{{ Math.round(p.member_discount * 10) }}折
                 </div>
               </div>
             </router-link>
@@ -87,13 +90,29 @@ import { ref, reactive, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import { categoriesApi, productsApi } from '@/api';
+import { useUserStore } from '@/stores/user';
 
 const route = useRoute();
+const userStore = useUserStore();
 const categories = ref([]);
 const products = ref([]);
 const total = ref(0);
 const loading = ref(true);
 const placeholderImg = '/images/products/placeholder-400x400.png';
+
+function displayPrice(p) {
+  if (p.member_price != null && p.member_price < p.price) {
+    return p.member_price.toFixed(2);
+  }
+  return p.price;
+}
+
+function showOriginalPrice(p) {
+  if (p.member_price != null && p.member_price < p.price) {
+    return true;
+  }
+  return !!p.original_price;
+}
 
 const filters = reactive({
   keyword: '',
@@ -106,6 +125,7 @@ const filters = reactive({
 });
 
 onMounted(async () => {
+  await userStore.fetchUser();
   categories.value = await categoriesApi.list();
   filters.keyword = route.query.keyword || '';
   filters.category_id = route.query.category_id || '';
@@ -239,6 +259,16 @@ function discount(p) {
 .price-row { display: flex; gap: 8px; align-items: baseline; }
 .price { font-size: 18px; font-weight: 700; color: #ef4444; }
 .orig { font-size: 13px; color: #94a3b8; text-decoration: line-through; }
+.member-badge-mini {
+  margin-top: 6px;
+  display: inline-block;
+  font-size: 11px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
 .pagination-wrap {
   margin-top: 24px;
   display: flex;

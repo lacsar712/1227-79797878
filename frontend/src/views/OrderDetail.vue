@@ -42,6 +42,9 @@
             <el-button type="primary" @click="pay">立即支付</el-button>
             <el-button type="danger" plain @click="cancel">取消订单</el-button>
           </div>
+          <div class="actions" v-if="order.status === 'shipped'">
+            <el-button type="success" @click="confirmReceive">确认收货</el-button>
+          </div>
         </el-card>
       </div>
     </template>
@@ -55,8 +58,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useConfirm } from '@/composables/useConfirm';
 import { ordersApi } from '@/api';
+import { useUserStore } from '@/stores/user';
 
 const confirm = useConfirm();
+const userStore = useUserStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -94,6 +99,23 @@ async function cancel() {
   await ordersApi.cancel(order.value.id);
   ElMessage.success('已取消');
   router.push('/orders');
+}
+
+async function confirmReceive() {
+  const ok = await confirm({ title: '确认收货', message: '确定已收到商品吗？', type: 'success' });
+  if (!ok) return;
+  const result = await ordersApi.complete(order.value.id);
+  if (result.member_updated) {
+    if (result.new_member_level && userStore.memberLevel?.level !== result.new_member_level.level) {
+      ElMessage.success(`恭喜！您已升级为${result.new_member_level.icon} ${result.new_member_level.name}！`);
+    } else {
+      ElMessage.success('收货成功，会员成长值已更新');
+    }
+    await userStore.fetchUser();
+  } else {
+    ElMessage.success('收货成功');
+  }
+  order.value = await ordersApi.detail(route.params.id);
 }
 </script>
 

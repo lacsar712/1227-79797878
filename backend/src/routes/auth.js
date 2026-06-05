@@ -6,6 +6,7 @@ const { User } = require('../models');
 const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const logger = require('../utils/logger');
+const { getLevelProgress, MEMBER_LEVELS } = require('../config/memberLevels');
 
 const router = express.Router();
 
@@ -34,11 +35,22 @@ router.post(
       }
       const user = await User.create({ username, email, password, nickname: nickname || username });
       const token = generateToken(user.id);
+      const totalSpent = parseFloat(user.total_spent || 0);
+      const memberInfo = getLevelProgress(totalSpent);
       res.json({
         code: 0,
         data: {
           token,
-          user: { id: user.id, username: user.username, email: user.email, nickname: user.nickname }
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            nickname: user.nickname,
+            total_spent: totalSpent,
+            member_level: memberInfo.currentLevel,
+            member_progress: memberInfo,
+            all_levels: MEMBER_LEVELS
+          }
         }
       });
     } catch (err) {
@@ -67,11 +79,22 @@ router.post(
         return res.status(400).json({ code: 400, message: '用户名或密码错误' });
       }
       const token = generateToken(user.id);
+      const totalSpent = parseFloat(user.total_spent || 0);
+      const memberInfo = getLevelProgress(totalSpent);
       res.json({
         code: 0,
         data: {
           token,
-          user: { id: user.id, username: user.username, email: user.email, nickname: user.nickname }
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            nickname: user.nickname,
+            total_spent: totalSpent,
+            member_level: memberInfo.currentLevel,
+            member_progress: memberInfo,
+            all_levels: MEMBER_LEVELS
+          }
         }
       });
     } catch (err) {
@@ -135,13 +158,42 @@ router.post(
 router.get('/me', auth, async (req, res) => {
   try {
     const u = req.user;
+    const totalSpent = parseFloat(u.total_spent || 0);
+    const memberInfo = getLevelProgress(totalSpent);
     res.json({
       code: 0,
-      data: { id: u.id, username: u.username, email: u.email, nickname: u.nickname, phone: u.phone }
+      data: {
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        nickname: u.nickname,
+        phone: u.phone,
+        total_spent: totalSpent,
+        member_level: memberInfo.currentLevel,
+        member_progress: memberInfo,
+        all_levels: MEMBER_LEVELS
+      }
     });
   } catch (err) {
     logger.error('Get me error:', err);
     res.status(500).json({ code: 500, message: '获取用户信息失败' });
+  }
+});
+
+router.get('/member-levels', auth, async (req, res) => {
+  try {
+    const totalSpent = parseFloat(req.user.total_spent || 0);
+    const memberInfo = getLevelProgress(totalSpent);
+    res.json({
+      code: 0,
+      data: {
+        current: memberInfo,
+        all_levels: MEMBER_LEVELS
+      }
+    });
+  } catch (err) {
+    logger.error('Get member levels error:', err);
+    res.status(500).json({ code: 500, message: '获取会员等级信息失败' });
   }
 });
 

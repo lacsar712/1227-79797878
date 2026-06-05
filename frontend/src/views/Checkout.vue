@@ -73,17 +73,47 @@
               <img :src="item.product?.image || placeholderImg" :alt="item.product?.name" />
               <div class="item-info">
                 <div class="name">{{ item.product?.name }}</div>
-                <div class="meta">¥{{ item.product?.price }} × {{ item.quantity }}</div>
+                <div class="meta">
+                  <template v-if="hasMemberDiscount && item.product?.member_price != null">
+                    <span class="member-price">¥{{ item.product.member_price.toFixed(2) }}</span>
+                    <span class="orig-price">¥{{ item.product.price }}</span>
+                    <span class="member-tag-mini">{{ item.product.member_level?.icon }} 会员</span>
+                  </template>
+                  <template v-else>
+                    ¥{{ item.product?.price }} × {{ item.quantity }}
+                  </template>
+                </div>
               </div>
-              <div class="subtotal">¥{{ ((item.product?.price || 0) * item.quantity).toFixed(2) }}</div>
+              <div class="subtotal">
+                <template v-if="hasMemberDiscount && item.product?.member_price != null">
+                  <div class="member-subtotal">¥{{ (item.product.member_price * item.quantity).toFixed(2) }}</div>
+                  <div class="orig-subtotal">¥{{ (item.product.price * item.quantity).toFixed(2) }}</div>
+                </template>
+                <template v-else>
+                  ¥{{ ((item.product?.price || 0) * item.quantity).toFixed(2) }}
+                </template>
+              </div>
             </div>
           </div>
           <el-input v-model="form.remark" placeholder="订单备注（选填）" type="textarea" :rows="2" class="remark" />
         </el-card>
         <div class="submit-bar">
           <div class="price-detail">
+            <div class="price-row" v-if="hasMemberDiscount">
+              <span>商品原价</span>
+              <span>¥{{ originalTotal.toFixed(2) }}</span>
+            </div>
+            <div class="price-row member-discount" v-if="hasMemberDiscount && memberSavings > 0">
+              <span>
+                会员折扣
+                <span v-if="userStore.memberLevel" class="member-level-inline">
+                  ({{ userStore.memberLevel.icon }} {{ userStore.memberLevel.name }})
+                </span>
+              </span>
+              <span>-¥{{ memberSavings.toFixed(2) }}</span>
+            </div>
             <div class="price-row">
-              <span>商品总额</span>
+              <span>{{ hasMemberDiscount ? '商品总额（会员价）' : '商品总额' }}</span>
               <span>¥{{ cartTotal.toFixed(2) }}</span>
             </div>
             <div class="price-row deduction" v-if="form.use_gift_card && deductionAmount > 0">
@@ -141,12 +171,38 @@ import { CircleCheck } from '@element-plus/icons-vue';
 import { addressesApi, ordersApi } from '@/api';
 import { useCartStore } from '@/stores/cart';
 import { useGiftCardStore } from '@/stores/giftCard';
+import { useUserStore } from '@/stores/user';
 
 const router = useRouter();
 const cartStore = useCartStore();
 const giftCardStore = useGiftCardStore();
+const userStore = useUserStore();
 const cartItems = computed(() => cartStore.items?.value ?? []);
-const cartTotal = computed(() => cartStore.total?.value ?? 0);
+
+const memberDiscount = computed(() => userStore.memberDiscount.value || 1.0);
+const hasMemberDiscount = computed(() => userStore.isLoggedIn.value && memberDiscount.value < 1.0);
+
+const originalTotal = computed(() => {
+  return cartItems.value.reduce((sum, item) => {
+    const price = parseFloat(item.product?.price || 0);
+    return sum + price * item.quantity;
+  }, 0);
+});
+
+const memberTotal = computed(() => {
+  if (!hasMemberDiscount.value) return originalTotal.value;
+  return cartItems.value.reduce((sum, item) => {
+    const price = parseFloat(item.product?.price || 0);
+    const memberPrice = Math.round(price * memberDiscount.value * 100) / 100;
+    return sum + memberPrice * item.quantity;
+  }, 0);
+});
+
+const memberSavings = computed(() => {
+  return Math.max(0, Math.round((originalTotal.value - memberTotal.value) * 100) / 100);
+});
+
+const cartTotal = computed(() => memberTotal.value);
 const loading = ref(true);
 const submitting = ref(false);
 const addresses = ref([]);
@@ -208,6 +264,7 @@ const addrForm = reactive({
 });
 
 onMounted(async () => {
+  await userStore.fetchUser();
   await cartStore.fetchCart();
   if (!cartItems.value.length) {
     ElMessage.warning('购物车为空');
@@ -367,7 +424,34 @@ async function submitOrder() {
 .order-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
 .item-info .name { font-weight: 500; }
 .item-info .meta { font-size: 13px; color: #64748b; }
-.subtotal { margin-left: auto; font-weight: 600; }
+.subtotal { margin-left: auto; font-weight: 600; text-align: right; }
+.member-price {
+  font-weight: 600;
+  color: #ef4444;
+  margin-right: 8px;
+}
+.orig-price {
+  text-decoration: line-through;
+  color: #94a3b8;
+  margin-right: 8px;
+}
+.member-tag-mini {
+  font-size: 11px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.member-subtotal {
+  color: #ef4444;
+  font-size: 15px;
+}
+.orig-subtotal {
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-weight: normal;
+}
 .remark { margin-top: 12px; }
 .submit-bar {
   display: flex;
@@ -393,6 +477,14 @@ async function submitOrder() {
 }
 .price-row.deduction {
   color: #ef4444;
+}
+.price-row.member-discount {
+  color: #10b981;
+}
+.member-level-inline {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 4px;
 }
 .price-row.total {
   margin-top: 8px;

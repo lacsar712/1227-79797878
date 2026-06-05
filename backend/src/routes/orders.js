@@ -9,11 +9,13 @@ const {
   Address,
   Product,
   GiftCard,
-  GiftCardUsage
+  GiftCardUsage,
+  User
 } = require('../models');
 const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const logger = require('../utils/logger');
+const { getLevelProgress } = require('../config/memberLevels');
 
 const router = express.Router();
 router.use(auth);
@@ -283,6 +285,49 @@ router.post('/:id/cancel', async (req, res) => {
   } catch (err) {
     logger.error('Cancel order error:', err);
     res.status(500).json({ code: 500, message: '取消失败' });
+  }
+});
+
+router.post('/:id/complete', async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      where: { id: req.params.id, user_id: req.user.id }
+    });
+    if (!order) {
+      return res.status(404).json({ code: 404, message: '订单不存在' });
+    }
+    if (order.status !== 'shipped') {
+      return res.status(400).json({ code: 400, message: '订单无法确认收货' });
+    }
+    const oldStatus = order.status;
+    await order.update({ status: 'completed' });
+
+    if (oldStatus !== 'completed') {
+      const user = await User.findByPk(req.user.id);
+      if (user) {
+        const amount = parseFloat(order.total_amount) - parseFloat(order.gift_card_deduction || 0);
+        const newTotalSpent = (parseFloat(user.total_spent || 0) + amount).toFixed(2);
+        await user.update({ total_spent: newTotalSpent });
+
+        const memberInfo = getLevelProgress(parseFloat(newTotalSpent));
+        res.json({
+          code: 0,
+          data: {
+            order,
+            member_updated: true,
+            new_member_level: memberInfo.currentLevel,
+            member_progress: memberInfo
+          },
+          message: '订单已完成，会员成长值已更新'
+        });
+        return;
+      }
+    }
+
+    res.json({ code: 0, data: order, message: '订单已完成' });
+  } catch (err) {
+    logger.error('Complete order error:', err);
+    res.status(500).json({ code: 500, message: '确认收货失败' });
   }
 });
 

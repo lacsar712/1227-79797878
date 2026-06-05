@@ -5,7 +5,8 @@ export const authApi = {
   register: (data) => api.post('/auth/register', data),
   forgotPassword: (data) => api.post('/auth/forgot-password', data),
   resetPassword: (data) => api.post('/auth/reset-password', data),
-  getMe: () => api.get('/auth/me')
+  getMe: () => api.get('/auth/me'),
+  getMemberLevels: () => api.get('/auth/member-levels')
 };
 
 export const categoriesApi = {
@@ -38,7 +39,8 @@ export const ordersApi = {
   detail: (id) => api.get(`/orders/${id}`),
   create: (data) => api.post('/orders/create', data),
   pay: (id) => api.post(`/orders/${id}/pay`),
-  cancel: (id) => api.post(`/orders/${id}/cancel`)
+  cancel: (id) => api.post(`/orders/${id}/cancel`),
+  complete: (id) => api.post(`/orders/${id}/complete`)
 };
 
 export const groupBuyApi = {

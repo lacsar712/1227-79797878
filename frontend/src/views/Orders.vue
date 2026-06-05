@@ -42,6 +42,14 @@
                 <el-button type="primary" size="small">去支付</el-button>
               </router-link>
               <el-button
+                v-if="order.status === 'shipped'"
+                type="success"
+                size="small"
+                @click="confirmReceive(order.id)"
+              >
+                确认收货
+              </el-button>
+              <el-button
                 v-if="['pending', 'paid'].includes(order.status)"
                 type="danger"
                 plain
@@ -76,8 +84,10 @@ import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useConfirm } from '@/composables/useConfirm';
 import { ordersApi } from '@/api';
+import { useUserStore } from '@/stores/user';
 
 const confirm = useConfirm();
+const userStore = useUserStore();
 
 const loading = ref(true);
 const orders = ref([]);
@@ -118,6 +128,23 @@ async function cancelOrder(id) {
   ElMessage.success('已取消');
   load();
 }
+
+async function confirmReceive(id) {
+  const ok = await confirm({ title: '确认收货', message: '确定已收到商品吗？', type: 'success' });
+  if (!ok) return;
+  const result = await ordersApi.complete(id);
+  if (result.member_updated) {
+    if (result.new_member_level && userStore.memberLevel?.level !== result.new_member_level.level) {
+      ElMessage.success(`恭喜！您已升级为${result.new_member_level.icon} ${result.new_member_level.name}！`);
+    } else {
+      ElMessage.success('收货成功，会员成长值已更新');
+    }
+    await userStore.fetchUser();
+  } else {
+    ElMessage.success('收货成功');
+  }
+  load();
+}
 </script>
 
 <style scoped>
@@ -138,6 +165,7 @@ async function cancelOrder(id) {
 }
 .status.pending { color: #f59e0b; }
 .status.paid { color: #6366f1; }
+.status.shipped { color: #f97316; }
 .status.completed { color: #22c55e; }
 .status.cancelled { color: #94a3b8; }
 .order-body { padding: 16px 24px; }

@@ -38,6 +38,10 @@ const User = sequelize.define(
     },
     reset_token_expires: {
       type: DataTypes.DATE
+    },
+    total_spent: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0.0
     }
   },
   {

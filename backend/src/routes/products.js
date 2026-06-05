@@ -1,11 +1,25 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { Product, Category, GroupBuyActivity, GroupBuy } = require('../models');
+const optionalAuth = require('../middleware/optionalAuth');
 const logger = require('../utils/logger');
+const { getLevelBySpent, calculateMemberPrice } = require('../config/memberLevels');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+function addMemberPrice(product, user) {
+  const result = product.toJSON ? product.toJSON() : { ...product };
+  if (user) {
+    const totalSpent = parseFloat(user.total_spent || 0);
+    const level = getLevelBySpent(totalSpent);
+    result.member_price = calculateMemberPrice(parseFloat(result.price), level.discount);
+    result.member_discount = level.discount;
+    result.member_level = level;
+  }
+  return result;
+}
+
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const {
       page = 1,
@@ -54,13 +68,14 @@ router.get('/', async (req, res) => {
       ]
     });
 
+    const listWithMemberPrice = rows.map((p) => addMemberPrice(p, req.user));
     res.json({
       code: 0,
       data: {
-        list: rows,
+        list: listWithMemberPrice,
         total: count,
-        page: parseInt(page, 10),
-        limit: parseInt(limit, 10)
+        page: parseInt(page, 1),
+        limit: parseInt(limit, 1)
       }
     });
   } catch (err) {
@@ -69,7 +84,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{ model: Category, attributes: ['id', 'name', 'slug'] }]
@@ -102,10 +117,11 @@ router.get('/:id', async (req, res) => {
       };
     }
 
+    const productWithMemberPrice = addMemberPrice(product, req.user);
     res.json({
       code: 0,
       data: {
-        ...product.toJSON(),
+        ...productWithMemberPrice,
         group_buy: groupBuyData
       }
     });
