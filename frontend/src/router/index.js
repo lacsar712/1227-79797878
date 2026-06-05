@@ -141,6 +141,18 @@ const routes = [
     name: 'WishlistShare',
     component: () => import('@/views/WishlistShare.vue'),
     meta: { title: '购物清单' }
+  },
+  {
+    path: '/coupon-center',
+    name: 'CouponCenter',
+    component: () => import('@/views/CouponCenter.vue'),
+    meta: { title: '优惠券领取中心' }
+  },
+  {
+    path: '/profile/coupons',
+    name: 'MyCoupons',
+    component: () => import('@/views/MyCoupons.vue'),
+    meta: { title: '我的优惠券', auth: true }
   }
 ];
 

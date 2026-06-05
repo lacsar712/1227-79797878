@@ -157,7 +157,7 @@ import {
 import { ticketsApi } from '@/api';
 
 const router = useRouter();
-const formRef = ref<InstanceType<typeof ElForm>>();
+const formRef = ref();
 
 const submitting = ref(false);
 const categories = ref([]);

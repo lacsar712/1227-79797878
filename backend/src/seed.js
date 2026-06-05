@@ -1,4 +1,4 @@
-const { User, Category, Product, GroupBuyActivity, Address, LiveStream, LiveStreamProduct, sequelize } = require('./models');
+const { User, Category, Product, GroupBuyActivity, Address, LiveStream, LiveStreamProduct, Coupon, sequelize } = require('./models');
 const logger = require('./utils/logger');
 
 const categories = [
@@ -337,6 +337,111 @@ async function run() {
 
     await LiveStreamProduct.bulkCreate(liveStreamProducts);
     logger.info('Live stream products seed completed');
+
+    const couponCount = await Coupon.count();
+    if (couponCount === 0) {
+      const now = new Date();
+      const nextMonth = new Date(now);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const nextWeek = new Date(now);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      const coupons = [
+        {
+          name: '新人专享券',
+          description: '新用户注册专享，全场通用',
+          type: 'fixed',
+          amount: 10,
+          min_amount: 50,
+          total_quantity: 1000,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextMonth,
+          valid_days: 30,
+          is_public: true,
+          status: 'active'
+        },
+        {
+          name: '满100减20',
+          description: '全场满100元可用，可与其他优惠叠加',
+          type: 'fixed',
+          amount: 20,
+          min_amount: 100,
+          total_quantity: 500,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextMonth,
+          valid_days: 15,
+          is_public: true,
+          status: 'active'
+        },
+        {
+          name: '数码产品专享券',
+          description: '仅限数码电子分类商品使用',
+          type: 'fixed',
+          amount: 50,
+          min_amount: 300,
+          total_quantity: 200,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextWeek,
+          valid_days: 7,
+          is_public: true,
+          status: 'active'
+        },
+        {
+          name: '9折优惠券',
+          description: '全场9折，最高优惠50元',
+          type: 'percent',
+          amount: 10,
+          min_amount: 0,
+          total_quantity: 300,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextMonth,
+          valid_days: 30,
+          is_public: true,
+          status: 'active'
+        },
+        {
+          name: '满200减50',
+          description: '全场满200元可用，超值优惠',
+          type: 'fixed',
+          amount: 50,
+          min_amount: 200,
+          total_quantity: 100,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextWeek,
+          valid_days: 7,
+          is_public: true,
+          status: 'active'
+        },
+        {
+          name: '美妆护肤专享',
+          description: '美妆护肤分类商品专用券',
+          type: 'fixed',
+          amount: 30,
+          min_amount: 150,
+          total_quantity: 250,
+          claimed_quantity: 0,
+          per_user_limit: 1,
+          start_at: now,
+          end_at: nextMonth,
+          valid_days: 20,
+          is_public: true,
+          status: 'active'
+        }
+      ];
+
+      await Coupon.bulkCreate(coupons);
+      logger.info('Coupons seed completed');
+    }
 
     logger.info('Seed completed');
   } catch (err) {

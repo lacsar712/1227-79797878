@@ -22,7 +22,7 @@
             {{ wishlist.is_public ? '复制分享链接' : '生成分享链接' }}
           </el-button>
           <el-button v-if="wishlist.is_public" type="warning" @click="handleUnshare">
-            <el-icon><LinkOff /></el-icon>
+            <el-icon><Close /></el-icon>
             取消分享
           </el-button>
           <el-button @click="handleEditName">
@@ -125,7 +125,7 @@ import {
   Edit,
   Delete,
   Link,
-  LinkOff,
+  Close,
   ShoppingCart
 } from '@element-plus/icons-vue';
 import { useWishlistStore } from '@/stores/wishlist';

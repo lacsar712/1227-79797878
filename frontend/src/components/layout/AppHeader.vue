@@ -21,6 +21,10 @@
       <nav class="nav-links">
         <router-link to="/" class="nav-item">首页</router-link>
         <router-link to="/products" class="nav-item">商品</router-link>
+        <router-link to="/coupon-center" class="nav-item coupon-nav-item">
+          <el-icon :size="16" color="#f97316"><Discount /></el-icon>
+          <span>领券中心</span>
+        </router-link>
         <template v-if="userStore.isLoggedIn">
           <router-link to="/cart" class="nav-item cart-link">
             <el-badge :value="cartCount" :max="99" :hidden="cartCount === 0">
@@ -37,6 +41,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="coupons">我的优惠券</el-dropdown-item>
                 <el-dropdown-item command="gift-card">礼品卡</el-dropdown-item>
                 <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                 <el-dropdown-item command="address">收货地址</el-dropdown-item>
@@ -57,7 +62,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search, ShoppingBag, ShoppingCart, ArrowDown } from '@element-plus/icons-vue';
+import { Search, ShoppingBag, ShoppingCart, ArrowDown, Discount } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useCartStore } from '@/stores/cart';
 
@@ -95,6 +100,8 @@ function handleUserCommand(cmd) {
     router.push('/orders');
   } else if (cmd === 'address') {
     router.push('/profile/address');
+  } else if (cmd === 'coupons') {
+    router.push('/profile/coupons');
   }
 }
 </script>

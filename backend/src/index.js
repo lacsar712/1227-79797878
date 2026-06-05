@@ -17,6 +17,7 @@ const notificationsRoutes = require('./routes/notifications');
 const ticketsRoutes = require('./routes/tickets');
 const wishlistsRoutes = require('./routes/wishlists');
 const liveStreamsRoutes = require('./routes/liveStreams');
+const { router: couponsRoutes, checkAndUpdateExpiredCoupons } = require('./routes/coupons');
 
 const app = express();
 const PORT = process.env.PORT || 8227;
@@ -37,6 +38,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/wishlists', wishlistsRoutes);
 app.use('/api/live-streams', liveStreamsRoutes);
+app.use('/api/coupons', couponsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -60,6 +62,11 @@ async function start() {
       checkExpiredGroupBuys();
     }, 60 * 1000);
     logger.info('Group buy expiration checker started');
+
+    setInterval(() => {
+      checkAndUpdateExpiredCoupons();
+    }, 60 * 1000);
+    logger.info('Coupon expiration checker started');
 
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`Server running on port ${PORT}`);

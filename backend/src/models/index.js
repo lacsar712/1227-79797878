@@ -20,6 +20,8 @@ const Wishlist = require('./Wishlist');
 const WishlistItem = require('./WishlistItem');
 const LiveStream = require('./LiveStream');
 const LiveStreamProduct = require('./LiveStreamProduct');
+const Coupon = require('./Coupon');
+const CouponClaim = require('./CouponClaim');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
 User.hasMany(GiftCard, { foreignKey: 'user_id' });
@@ -95,6 +97,11 @@ LiveStream.hasMany(LiveStreamProduct, { foreignKey: 'live_stream_id', as: 'produ
 LiveStreamProduct.belongsTo(LiveStream, { foreignKey: 'live_stream_id' });
 LiveStreamProduct.belongsTo(Product, { foreignKey: 'product_id' });
 
+User.hasMany(CouponClaim, { foreignKey: 'user_id' });
+CouponClaim.belongsTo(User, { foreignKey: 'user_id' });
+Coupon.hasMany(CouponClaim, { foreignKey: 'coupon_id' });
+CouponClaim.belongsTo(Coupon, { foreignKey: 'coupon_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -117,5 +124,7 @@ module.exports = {
   Wishlist,
   WishlistItem,
   LiveStream,
-  LiveStreamProduct
+  LiveStreamProduct,
+  Coupon,
+  CouponClaim
 };

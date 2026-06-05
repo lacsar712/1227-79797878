@@ -102,6 +102,10 @@
           <el-icon :size="24"><Wallet /></el-icon>
           <span>礼品卡</span>
         </router-link>
+        <router-link to="/profile/coupons" class="link-item">
+          <el-icon :size="24"><Discount /></el-icon>
+          <span>我的优惠券</span>
+        </router-link>
         <router-link to="/profile/address" class="link-item">
           <el-icon :size="24"><Location /></el-icon>
           <span>收货地址</span>
@@ -121,7 +125,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell, CircleCheck, Collection } from '@element-plus/icons-vue';
+import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell, CircleCheck, Collection, Discount } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useGiftCardStore } from '@/stores/giftCard';
 import { notificationsApi } from '@/api';
