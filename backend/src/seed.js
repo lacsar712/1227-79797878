@@ -1,4 +1,4 @@
-const { User, Category, Product, GroupBuyActivity, Address, sequelize } = require('./models');
+const { User, Category, Product, GroupBuyActivity, Address, LiveStream, LiveStreamProduct, sequelize } = require('./models');
 const logger = require('./utils/logger');
 
 const categories = [
@@ -254,6 +254,89 @@ async function run() {
 
     await GroupBuyActivity.bulkCreate(groupBuyActivities);
     logger.info('Group buy activities seed completed');
+
+    const liveStreams = [
+      {
+        title: '618数码狂欢节 爆款5折起',
+        cover_image: '/images/products/wireless-earphones.jpg',
+        status: 'live',
+        start_time: new Date(Date.now() - 3600000),
+        streamer_name: '数码达人小明',
+        viewer_count: 12580,
+        description: '年度最低价！数码好物等你来抢，蓝牙耳机、智能手表、机械键盘全场5折起！'
+      },
+      {
+        title: '美妆专场 大牌平价替代',
+        cover_image: '/images/products/lipstick-set.jpg',
+        status: 'live',
+        start_time: new Date(Date.now() - 7200000),
+        streamer_name: '美妆博主Lily',
+        viewer_count: 8960,
+        description: '超火美妆单品推荐，教你如何花最少的钱打造精致妆容！'
+      },
+      {
+        title: '运动户外节 装备换新',
+        cover_image: '/images/products/sports-shoes.jpg',
+        status: 'upcoming',
+        start_time: new Date(Date.now() + 3600000 * 2),
+        streamer_name: '健身教练阿杰',
+        viewer_count: 0,
+        description: '专业运动装备推荐，运动鞋、运动服饰超值优惠，明天晚上8点不见不散！'
+      },
+      {
+        title: '家居好物 提升幸福感',
+        cover_image: '/images/products/floor-lamp.jpg',
+        status: 'upcoming',
+        start_time: new Date(Date.now() + 3600000 * 24),
+        streamer_name: '居家达人小美',
+        viewer_count: 0,
+        description: '精选家居好物，让你的家更温馨更舒适，后天下午2点开播！'
+      },
+      {
+        title: '美食零食节 吃货福利',
+        cover_image: '/images/products/nut-gift-box.jpg',
+        status: 'ended',
+        start_time: new Date(Date.now() - 3600000 * 24),
+        end_time: new Date(Date.now() - 3600000 * 20),
+        streamer_name: '吃货主播大伟',
+        viewer_count: 25680,
+        description: '精选全球美食，坚果礼盒、有机麦片超值特惠，错过再等一年！'
+      },
+      {
+        title: '服饰新品发布会',
+        cover_image: '/images/products/cotton-tshirt.jpg',
+        status: 'ended',
+        start_time: new Date(Date.now() - 3600000 * 48),
+        end_time: new Date(Date.now() - 3600000 * 44),
+        streamer_name: '时尚穿搭师Anna',
+        viewer_count: 18900,
+        description: '夏季新款服饰首发，纯棉T恤、真皮包包限时特惠！'
+      }
+    ];
+
+    const createdLiveStreams = await LiveStream.bulkCreate(liveStreams, { returning: true });
+    logger.info('Live streams seed completed');
+
+    const liveStreamProducts = [];
+    for (let i = 0; i < createdLiveStreams.length; i++) {
+      const stream = createdLiveStreams[i];
+      const productCount = stream.status === 'ended' ? 5 : 6;
+      const startIdx = i % createdProducts.length;
+      for (let j = 0; j < productCount; j++) {
+        const productIdx = (startIdx + j) % createdProducts.length;
+        const product = createdProducts[productIdx];
+        liveStreamProducts.push({
+          live_stream_id: stream.id,
+          product_id: product.id,
+          sort_order: j + 1,
+          is_highlight: j === 0,
+          live_price: parseFloat(product.price) * 0.85
+        });
+      }
+    }
+
+    await LiveStreamProduct.bulkCreate(liveStreamProducts);
+    logger.info('Live stream products seed completed');
 
     logger.info('Seed completed');
   } catch (err) {

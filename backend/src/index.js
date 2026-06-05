@@ -16,6 +16,7 @@ const { router: stockSubscriptionsRoutes } = require('./routes/stockSubscription
 const notificationsRoutes = require('./routes/notifications');
 const ticketsRoutes = require('./routes/tickets');
 const wishlistsRoutes = require('./routes/wishlists');
+const liveStreamsRoutes = require('./routes/liveStreams');
 
 const app = express();
 const PORT = process.env.PORT || 8227;
@@ -35,6 +36,7 @@ app.use('/api/stock-subscriptions', stockSubscriptionsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/wishlists', wishlistsRoutes);
+app.use('/api/live-streams', liveStreamsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

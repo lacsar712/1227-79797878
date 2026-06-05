@@ -99,3 +99,9 @@ export const wishlistApi = {
   addToCart: (shareCode, productIds) =>
     api.post(`/wishlists/share/${shareCode}/add-to-cart`, { product_ids: productIds })
 };
+
+export const liveStreamApi = {
+  list: (params) => api.get('/live-streams', { params }),
+  active: () => api.get('/live-streams/active'),
+  detail: (id) => api.get(`/live-streams/${id}`)
+};

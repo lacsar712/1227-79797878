@@ -5,6 +5,18 @@ import { useUserStore } from '@/stores/user';
 const routes = [
   { path: '/', name: 'Home', component: () => import('@/views/Home.vue'), meta: { title: '首页' } },
   {
+    path: '/live',
+    name: 'LiveList',
+    component: () => import('@/views/LiveList.vue'),
+    meta: { title: '直播中心' }
+  },
+  {
+    path: '/live/:id',
+    name: 'LiveDetail',
+    component: () => import('@/views/LiveDetail.vue'),
+    meta: { title: '直播间' }
+  },
+  {
     path: '/products',
     name: 'Products',
     component: () => import('@/views/Products.vue'),

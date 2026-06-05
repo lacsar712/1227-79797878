@@ -18,6 +18,8 @@ const SupportTicket = require('./SupportTicket');
 const SupportTicketReply = require('./SupportTicketReply');
 const Wishlist = require('./Wishlist');
 const WishlistItem = require('./WishlistItem');
+const LiveStream = require('./LiveStream');
+const LiveStreamProduct = require('./LiveStreamProduct');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
 User.hasMany(GiftCard, { foreignKey: 'user_id' });
@@ -89,6 +91,10 @@ Wishlist.hasMany(WishlistItem, { foreignKey: 'wishlist_id' });
 WishlistItem.belongsTo(Wishlist, { foreignKey: 'wishlist_id' });
 WishlistItem.belongsTo(Product, { foreignKey: 'product_id' });
 
+LiveStream.hasMany(LiveStreamProduct, { foreignKey: 'live_stream_id', as: 'products' });
+LiveStreamProduct.belongsTo(LiveStream, { foreignKey: 'live_stream_id' });
+LiveStreamProduct.belongsTo(Product, { foreignKey: 'product_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -109,5 +115,7 @@ module.exports = {
   SupportTicket,
   SupportTicketReply,
   Wishlist,
-  WishlistItem
+  WishlistItem,
+  LiveStream,
+  LiveStreamProduct
 };
