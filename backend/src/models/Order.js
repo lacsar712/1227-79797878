@@ -46,6 +46,14 @@ const Order = sequelize.define(
     },
     group_buy_member_id: {
       type: DataTypes.INTEGER
+    },
+    gift_card_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    gift_card_deduction: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0
     }
   },
   { tableName: 'orders' }

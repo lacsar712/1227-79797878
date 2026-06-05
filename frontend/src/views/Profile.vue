@@ -9,11 +9,29 @@
           <p>{{ userStore.user?.email }}</p>
         </div>
       </div>
+      <div class="balance-section">
+        <router-link to="/gift-card" class="gift-card-balance">
+          <div class="balance-icon">
+            <el-icon :size="28"><Wallet /></el-icon>
+          </div>
+          <div class="balance-info">
+            <div class="balance-label">礼品卡余额</div>
+            <div class="balance-value">¥{{ giftCardStore.totalBalance.value }}</div>
+          </div>
+          <div class="balance-arrow">
+            <el-icon :size="20"><ArrowRight /></el-icon>
+          </div>
+        </router-link>
+      </div>
       <el-divider />
       <div class="quick-links">
         <router-link to="/orders" class="link-item">
           <el-icon :size="24"><Document /></el-icon>
           <span>我的订单</span>
+        </router-link>
+        <router-link to="/gift-card" class="link-item">
+          <el-icon :size="24"><Wallet /></el-icon>
+          <span>礼品卡</span>
         </router-link>
         <router-link to="/profile/address" class="link-item">
           <el-icon :size="24"><Location /></el-icon>
@@ -29,14 +47,17 @@
 </template>
 
 <script setup>
-import { Document, Location, ShoppingCart } from '@element-plus/icons-vue';
+import { Document, Location, ShoppingCart, Wallet, ArrowRight } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
+import { useGiftCardStore } from '@/stores/giftCard';
 import { onMounted } from 'vue';
 
 const userStore = useUserStore();
+const giftCardStore = useGiftCardStore();
 
-onMounted(() => {
-  userStore.fetchUser();
+onMounted(async () => {
+  await userStore.fetchUser();
+  await giftCardStore.fetchMyCards();
 });
 </script>
 
@@ -49,9 +70,50 @@ onMounted(() => {
 }
 .profile-info h2 { font-size: 22px; margin: 0 0 8px; }
 .profile-info p { margin: 0; color: #64748b; }
+.balance-section {
+  margin-top: 20px;
+}
+.gift-card-balance {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.gift-card-balance:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+.balance-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+.balance-info {
+  flex: 1;
+}
+.balance-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+.balance-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+.balance-arrow {
+  opacity: 0.8;
+}
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 .link-item {
@@ -69,6 +131,7 @@ onMounted(() => {
   color: #6366f1;
 }
 @media (max-width: 600px) {
-  .quick-links { grid-template-columns: 1fr; }
+  .quick-links { grid-template-columns: repeat(2, 1fr); }
+  .balance-value { font-size: 24px; }
 }
 </style>

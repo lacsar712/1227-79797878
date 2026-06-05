@@ -24,8 +24,19 @@
             </div>
           </div>
           <el-divider />
-          <div class="total-row">
-            订单合计：<span class="amount">¥{{ order.total_amount }}</span>
+          <div class="price-detail">
+            <div class="price-row">
+              <span>商品总额</span>
+              <span>¥{{ order.total_amount }}</span>
+            </div>
+            <div class="price-row deduction" v-if="order.gift_card_deduction > 0">
+              <span>礼品卡抵扣</span>
+              <span>-¥{{ order.gift_card_deduction }}</span>
+            </div>
+            <div class="price-row total">
+              <span>应付金额</span>
+              <span class="amount">¥{{ (parseFloat(order.total_amount) - parseFloat(order.gift_card_deduction || 0)).toFixed(2) }}</span>
+            </div>
           </div>
           <div class="actions" v-if="order.status === 'pending'">
             <el-button type="primary" @click="pay">立即支付</el-button>
@@ -104,7 +115,29 @@ async function cancel() {
 .item-info .name { font-weight: 500; display: block; margin-bottom: 4px; }
 .item-info .name:hover { color: #6366f1; }
 .item-info .meta { font-size: 13px; color: #64748b; }
-.total-row { text-align: right; font-size: 18px; }
-.amount { font-weight: 700; color: #ef4444; }
+.price-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 260px;
+  margin-left: auto;
+}
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #475569;
+}
+.price-row.deduction {
+  color: #ef4444;
+}
+.price-row.total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 15px;
+  font-weight: 600;
+}
+.amount { font-weight: 700; color: #ef4444; font-size: 22px; }
 .actions { margin-top: 24px; display: flex; gap: 12px; }
 </style>

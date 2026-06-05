@@ -81,6 +81,12 @@ const routes = [
     name: 'GroupDetail',
     component: () => import('@/views/GroupDetail.vue'),
     meta: { title: '拼团详情' }
+  },
+  {
+    path: '/gift-card',
+    name: 'GiftCard',
+    component: () => import('@/views/GiftCard.vue'),
+    meta: { title: '礼品卡中心', auth: true }
   }
 ];
 

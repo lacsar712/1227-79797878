@@ -2,12 +2,14 @@ import { createStore } from 'vuex';
 import { userModule } from '@/stores/user';
 import { cartModule } from '@/stores/cart';
 import { confirmModule } from '@/stores/confirm';
+import { giftCardModule } from '@/stores/giftCard';
 
 const store = createStore({
   modules: {
     user: userModule,
     cart: cartModule,
-    confirm: confirmModule
+    confirm: confirmModule,
+    giftCard: giftCardModule
   },
   plugins: [
     (store) => {

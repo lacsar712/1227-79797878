@@ -37,6 +37,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="gift-card">礼品卡</el-dropdown-item>
                 <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                 <el-dropdown-item command="address">收货地址</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
@@ -88,6 +89,8 @@ function handleUserCommand(cmd) {
     router.push('/');
   } else if (cmd === 'profile') {
     router.push('/profile');
+  } else if (cmd === 'gift-card') {
+    router.push('/gift-card');
   } else if (cmd === 'orders') {
     router.push('/orders');
   } else if (cmd === 'address') {

@@ -27,6 +27,37 @@
             <el-button type="primary" @click="showAddressForm = true">添加地址</el-button>
           </el-empty>
         </el-card>
+
+        <el-card shadow="never" class="section" v-if="availableCards.length > 0">
+          <template #header>
+            <span>礼品卡抵扣</span>
+            <span class="balance-tip">可用余额：¥{{ totalAvailableBalance }}</span>
+          </template>
+          <div class="gift-card-section">
+            <el-checkbox v-model="form.use_gift_card" class="use-gift-card">
+              使用礼品卡抵扣
+            </el-checkbox>
+            <div v-if="form.use_gift_card" class="gift-card-list">
+              <div
+                v-for="card in availableCards"
+                :key="card.id"
+                :class="['gift-card-item', { active: form.gift_card_id === card.id }]"
+                @click="selectGiftCard(card)"
+              >
+                <div class="card-info">
+                  <span class="card-amount">¥{{ card.amount }}</span>
+                  <span class="card-balance">余额：¥{{ card.balance }}</span>
+                </div>
+                <span class="card-no">{{ card.card_no }}</span>
+              </div>
+            </div>
+            <div v-if="form.use_gift_card && deductionAmount > 0" class="deduction-info">
+              <el-icon :size="18" color="#10b981"><CircleCheck /></el-icon>
+              <span>本次可抵扣 <em>¥{{ deductionAmount.toFixed(2) }}</em></span>
+            </div>
+          </div>
+        </el-card>
+
         <el-card shadow="never" class="section">
           <template #header>支付方式</template>
           <el-radio-group v-model="form.payment_method">
@@ -50,9 +81,22 @@
           <el-input v-model="form.remark" placeholder="订单备注（选填）" type="textarea" :rows="2" class="remark" />
         </el-card>
         <div class="submit-bar">
-          <div class="total">合计：<span>¥{{ cartTotal.toFixed(2) }}</span></div>
+          <div class="price-detail">
+            <div class="price-row">
+              <span>商品总额</span>
+              <span>¥{{ cartTotal.toFixed(2) }}</span>
+            </div>
+            <div class="price-row deduction" v-if="form.use_gift_card && deductionAmount > 0">
+              <span>礼品卡抵扣</span>
+              <span>-¥{{ deductionAmount.toFixed(2) }}</span>
+            </div>
+            <div class="price-row total">
+              <span>应付金额</span>
+              <span class="total-amount">¥{{ finalAmount.toFixed(2) }}</span>
+            </div>
+          </div>
           <el-button type="primary" size="large" :loading="submitting" @click="submitOrder">
-            提交订单
+            {{ finalAmount <= 0 ? '提交订单' : '提交订单' }}
           </el-button>
         </div>
       </template>
@@ -90,14 +134,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { CircleCheck } from '@element-plus/icons-vue';
 import { addressesApi, ordersApi } from '@/api';
 import { useCartStore } from '@/stores/cart';
+import { useGiftCardStore } from '@/stores/giftCard';
 
 const router = useRouter();
 const cartStore = useCartStore();
+const giftCardStore = useGiftCardStore();
 const cartItems = computed(() => cartStore.items?.value ?? []);
 const cartTotal = computed(() => cartStore.total?.value ?? 0);
 const loading = ref(true);
@@ -107,11 +154,48 @@ const showAddressForm = ref(false);
 const editingAddr = ref(null);
 const placeholderImg = '/images/products/placeholder-100x100.png';
 
+const availableCards = ref([]);
+const totalAvailableBalance = ref('0.00');
+
 const form = reactive({
   address_id: null,
   payment_method: 'alipay',
-  remark: ''
+  remark: '',
+  use_gift_card: false,
+  gift_card_id: null
 });
+
+const deductionAmount = computed(() => {
+  if (!form.use_gift_card) return 0;
+  const total = cartTotal.value;
+  if (total <= 0) return 0;
+
+  if (form.gift_card_id) {
+    const card = availableCards.value.find((c) => c.id === form.gift_card_id);
+    if (card) {
+      const balance = parseFloat(card.balance);
+      return Math.min(balance, total);
+    }
+  }
+
+  const totalBalance = parseFloat(totalAvailableBalance.value);
+  return Math.min(totalBalance, total);
+});
+
+const finalAmount = computed(() => {
+  const total = cartTotal.value - deductionAmount.value;
+  return Math.max(0, total);
+});
+
+function selectGiftCard(card) {
+  form.gift_card_id = form.gift_card_id === card.id ? null : card.id;
+}
+
+async function loadGiftCards() {
+  const data = await giftCardStore.fetchAvailableCards();
+  availableCards.value = data.list || [];
+  totalAvailableBalance.value = data.total_balance || '0.00';
+}
 
 const addrForm = reactive({
   receiver: '',
@@ -133,6 +217,7 @@ onMounted(async () => {
   addresses.value = await addressesApi.list();
   const defaultAddr = addresses.value.find((a) => a.is_default);
   form.address_id = defaultAddr?.id || addresses.value[0]?.id;
+  await loadGiftCards();
   loading.value = false;
 });
 
@@ -160,9 +245,20 @@ async function submitOrder() {
     ElMessage.warning('请选择收货地址');
     return;
   }
+  if (form.use_gift_card && deductionAmount.value <= 0) {
+    form.use_gift_card = false;
+    form.gift_card_id = null;
+  }
   submitting.value = true;
   try {
-    const order = await ordersApi.create(form);
+    const orderData = {
+      address_id: form.address_id,
+      payment_method: form.payment_method,
+      remark: form.remark,
+      use_gift_card: form.use_gift_card,
+      gift_card_id: form.use_gift_card ? form.gift_card_id : null
+    };
+    const order = await ordersApi.create(orderData);
     await cartStore.fetchCart();
     ElMessage.success('订单创建成功');
     router.push(`/order/${order.id}`);
@@ -188,6 +284,78 @@ async function submitOrder() {
 .receiver { font-weight: 600; }
 .default { font-size: 12px; color: #6366f1; background: #eef2ff; padding: 2px 8px; border-radius: 4px; }
 .addr-detail { color: #64748b; font-size: 14px; }
+
+.balance-tip {
+  font-size: 13px;
+  color: #10b981;
+  font-weight: 500;
+}
+.gift-card-section {
+  padding: 8px 0;
+}
+.use-gift-card {
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+.gift-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.gift-card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fef3c7;
+}
+.gift-card-item:hover {
+  border-color: #6366f1;
+}
+.gift-card-item.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #92400e;
+}
+.card-balance {
+  font-size: 13px;
+  color: #64748b;
+}
+.card-no {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #78350f;
+}
+.deduction-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #dcfce7;
+  border-radius: 8px;
+  color: #166534;
+  font-size: 14px;
+}
+.deduction-info em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+}
+
 .order-items { margin-bottom: 16px; }
 .order-item {
   display: flex;
@@ -211,5 +379,38 @@ async function submitOrder() {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-.submit-bar .total span { font-size: 24px; font-weight: 700; color: #ef4444; }
+.price-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #475569;
+}
+.price-row.deduction {
+  color: #ef4444;
+}
+.price-row.total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 15px;
+  font-weight: 600;
+}
+.total-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ef4444;
+}
+@media (max-width: 480px) {
+  .submit-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+}
 </style>

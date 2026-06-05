@@ -33,7 +33,10 @@
             </router-link>
           </div>
           <div class="order-footer">
-            <span class="total">合计：¥{{ order.total_amount }}</span>
+            <div class="price-info">
+              <span v-if="order.gift_card_deduction > 0" class="deduction">礼品卡抵扣 ¥{{ order.gift_card_deduction }}</span>
+              <span class="total">合计：¥{{ (parseFloat(order.total_amount) - parseFloat(order.gift_card_deduction || 0)).toFixed(2) }}</span>
+            </div>
             <div class="actions">
               <router-link v-if="order.status === 'pending'" :to="`/order/${order.id}`">
                 <el-button type="primary" size="small">去支付</el-button>
@@ -157,6 +160,15 @@ async function cancelOrder(id) {
   align-items: center;
   padding: 16px 24px;
   border-top: 1px solid #f1f5f9;
+}
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.deduction {
+  font-size: 12px;
+  color: #ef4444;
 }
 .total { font-weight: 600; }
 .actions { display: flex; gap: 8px; }

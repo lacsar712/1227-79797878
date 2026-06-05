@@ -1,12 +1,15 @@
 const express = require('express');
 const { body } = require('express-validator');
+const { Op } = require('sequelize');
 const {
   Order,
   OrderItem,
   Cart,
   CartItem,
   Address,
-  Product
+  Product,
+  GiftCard,
+  GiftCardUsage
 } = require('../models');
 const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
@@ -71,12 +74,14 @@ router.post(
   [
     body('address_id').isInt().withMessage('请选择收货地址'),
     body('payment_method').isIn(['alipay', 'wechat', 'bank']).withMessage('请选择支付方式'),
-    body('remark').optional().trim()
+    body('remark').optional().trim(),
+    body('use_gift_card').optional().isBoolean(),
+    body('gift_card_id').optional().isInt()
   ],
   validate,
   async (req, res) => {
     try {
-      const { address_id, payment_method, remark } = req.body;
+      const { address_id, payment_method, remark, use_gift_card, gift_card_id } = req.body;
       const address = await Address.findOne({
         where: { id: address_id, user_id: req.user.id }
       });
@@ -118,14 +123,89 @@ router.post(
         });
       }
 
+      let giftCardDeduction = 0;
+      let selectedGiftCard = null;
+
+      if (use_gift_card) {
+        const whereCondition = {
+          user_id: req.user.id,
+          status: 'bound'
+        };
+        if (gift_card_id) {
+          whereCondition.id = gift_card_id;
+        }
+
+        const giftCards = await GiftCard.findAll({
+          where: whereCondition,
+          order: [['balance', 'DESC']]
+        });
+
+        let remainingAmount = totalAmount;
+        for (const card of giftCards) {
+          if (remainingAmount <= 0) break;
+          const cardBalance = parseFloat(card.balance);
+          if (cardBalance <= 0) continue;
+
+          const deduction = Math.min(cardBalance, remainingAmount);
+          giftCardDeduction += deduction;
+          remainingAmount -= deduction;
+          selectedGiftCard = card;
+
+          if (remainingAmount <= 0) break;
+        }
+
+        if (giftCardDeduction > totalAmount) {
+          giftCardDeduction = totalAmount;
+        }
+      }
+
       const order = await Order.create({
         user_id: req.user.id,
         order_no: generateOrderNo(),
         address_id,
         total_amount: totalAmount,
+        gift_card_deduction: giftCardDeduction,
+        gift_card_id: selectedGiftCard?.id || null,
         payment_method,
         remark: remark || null
       });
+
+      if (use_gift_card && giftCardDeduction > 0) {
+        let remainingDeduction = giftCardDeduction;
+        const giftCards = await GiftCard.findAll({
+          where: {
+            user_id: req.user.id,
+            status: 'bound',
+            balance: { [Op.gt]: 0 }
+          },
+          order: [['balance', 'DESC']]
+        });
+
+        for (const card of giftCards) {
+          if (remainingDeduction <= 0) break;
+          const cardBalance = parseFloat(card.balance);
+          const deductAmount = Math.min(cardBalance, remainingDeduction);
+
+          if (deductAmount > 0) {
+            const newBalance = (cardBalance - deductAmount).toFixed(2);
+            await card.update({
+              balance: newBalance,
+              status: parseFloat(newBalance) <= 0 ? 'used' : 'bound'
+            });
+
+            await GiftCardUsage.create({
+              gift_card_id: card.id,
+              user_id: req.user.id,
+              order_id: order.id,
+              amount: deductAmount,
+              balance_before: cardBalance,
+              balance_after: newBalance
+            });
+
+            remainingDeduction -= deductAmount;
+          }
+        }
+      }
 
       for (const it of items) {
         await OrderItem.create({

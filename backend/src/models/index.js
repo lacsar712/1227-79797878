@@ -10,8 +10,20 @@ const OrderItem = require('./OrderItem');
 const GroupBuyActivity = require('./GroupBuyActivity');
 const GroupBuy = require('./GroupBuy');
 const GroupBuyMember = require('./GroupBuyMember');
+const GiftCard = require('./GiftCard');
+const GiftCardUsage = require('./GiftCardUsage');
 
 User.hasMany(Address, { foreignKey: 'user_id' });
+User.hasMany(GiftCard, { foreignKey: 'user_id' });
+GiftCard.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(GiftCardUsage, { foreignKey: 'user_id' });
+GiftCardUsage.belongsTo(User, { foreignKey: 'user_id' });
+GiftCard.hasMany(GiftCardUsage, { foreignKey: 'gift_card_id' });
+GiftCardUsage.belongsTo(GiftCard, { foreignKey: 'gift_card_id' });
+Order.hasMany(GiftCardUsage, { foreignKey: 'order_id' });
+GiftCardUsage.belongsTo(Order, { foreignKey: 'order_id' });
+GiftCard.hasMany(Order, { foreignKey: 'gift_card_id' });
+Order.belongsTo(GiftCard, { foreignKey: 'gift_card_id' });
 Address.belongsTo(User, { foreignKey: 'user_id' });
 
 User.hasMany(Cart, { foreignKey: 'user_id' });
@@ -61,5 +73,7 @@ module.exports = {
   OrderItem,
   GroupBuyActivity,
   GroupBuy,
-  GroupBuyMember
+  GroupBuyMember,
+  GiftCard,
+  GiftCardUsage
 };
