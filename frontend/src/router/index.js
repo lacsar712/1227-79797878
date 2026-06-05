@@ -93,6 +93,24 @@ const routes = [
     name: 'Notifications',
     component: () => import('@/views/Notifications.vue'),
     meta: { title: '消息通知', auth: true }
+  },
+  {
+    path: '/support',
+    name: 'Support',
+    component: () => import('@/views/Support.vue'),
+    meta: { title: '联系客服', auth: true }
+  },
+  {
+    path: '/support/tickets',
+    name: 'SupportTickets',
+    component: () => import('@/views/SupportTickets.vue'),
+    meta: { title: '我的工单', auth: true }
+  },
+  {
+    path: '/support/ticket/:id',
+    name: 'SupportTicketDetail',
+    component: () => import('@/views/SupportTicketDetail.vue'),
+    meta: { title: '工单详情', auth: true }
   }
 ];
 
