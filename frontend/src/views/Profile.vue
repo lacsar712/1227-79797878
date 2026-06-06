@@ -3,59 +3,59 @@
     <h1 class="page-title">个人中心</h1>
     <el-card shadow="never" class="profile-card">
       <div class="profile-header">
-        <el-avatar :size="80">{{ userStore.user?.nickname?.[0] || 'U' }}</el-avatar>
+        <el-avatar :size="80">{{ user?.nickname?.[0] || 'U' }}</el-avatar>
         <div class="profile-info">
           <div class="name-row">
-            <h2>{{ userStore.user?.nickname || userStore.user?.username }}</h2>
+            <h2>{{ user?.nickname || user?.username }}</h2>
             <div
-              v-if="userStore.memberLevel"
+              v-if="memberLevel"
               class="member-badge"
-              :style="{ background: userStore.memberLevel.gradient }"
+              :style="{ background: memberLevel.gradient }"
             >
-              <span class="member-icon">{{ userStore.memberLevel.icon }}</span>
-              <span class="member-name">{{ userStore.memberLevel.name }}</span>
+              <span class="member-icon">{{ memberLevel.icon }}</span>
+              <span class="member-name">{{ memberLevel.name }}</span>
             </div>
           </div>
-          <p>{{ userStore.user?.email }}</p>
-          <div class="total-spent" v-if="userStore.isLoggedIn">
-            累计消费：<strong>¥{{ userStore.totalSpent.toFixed(2) }}</strong>
+          <p>{{ user?.email }}</p>
+          <div class="total-spent" v-if="isLoggedIn">
+            累计消费：<strong>¥{{ totalSpentDisplay }}</strong>
           </div>
         </div>
       </div>
 
-      <div v-if="userStore.memberProgress" class="member-progress-section">
+      <div v-if="memberProgress" class="member-progress-section">
         <div class="progress-header">
           <span class="current-level">
-            {{ userStore.memberProgress.currentLevel.icon }} {{ userStore.memberProgress.currentLevel.name }}
+            {{ memberProgress.currentLevel.icon }} {{ memberProgress.currentLevel.name }}
           </span>
-          <span v-if="userStore.memberProgress.nextLevel" class="next-level">
-            距离 {{ userStore.memberProgress.nextLevel.name }} 还需 ¥{{ userStore.memberProgress.amountToNext.toFixed(2) }}
+          <span v-if="memberProgress.nextLevel" class="next-level">
+            距离 {{ memberProgress.nextLevel.name }} 还需 ¥{{ amountToNextDisplay }}
           </span>
           <span v-else class="next-level max-level">
             已达最高等级
           </span>
         </div>
         <el-progress
-          :percentage="userStore.memberProgress.progress"
-          :color="userStore.memberProgress.currentLevel.color"
+          :percentage="memberProgress.progress"
+          :color="memberProgress.currentLevel.color"
           :stroke-width="12"
           :show-text="false"
         />
         <div class="progress-labels">
-          <span>¥{{ userStore.memberProgress.currentLevel.min_spent }}</span>
-          <span v-if="userStore.memberProgress.nextLevel">
-            ¥{{ userStore.memberProgress.nextLevel.min_spent }}
+          <span>¥{{ memberProgress.currentLevel.min_spent }}</span>
+          <span v-if="memberProgress.nextLevel">
+            ¥{{ memberProgress.nextLevel.min_spent }}
           </span>
         </div>
       </div>
 
-      <div class="member-benefits-section" v-if="userStore.isLoggedIn">
+      <div class="member-benefits-section" v-if="isLoggedIn">
         <h3 class="section-title">会员等级与权益</h3>
         <div class="levels-grid">
           <div
-            v-for="level in userStore.memberLevels"
+            v-for="level in memberLevels"
             :key="level.level"
-            :class="['level-card', { active: userStore.memberLevel?.level >= level.level, current: userStore.memberLevel?.level === level.level }]"
+            :class="['level-card', { active: memberLevel?.level >= level.level, current: memberLevel?.level === level.level }]"
           >
             <div class="level-icon" :style="{ background: level.gradient }">
               {{ level.icon }}
@@ -80,7 +80,7 @@
           </div>
           <div class="balance-info">
             <div class="balance-label">礼品卡余额</div>
-            <div class="balance-value">¥{{ giftCardStore.totalBalance.value }}</div>
+            <div class="balance-value">¥{{ giftCardBalance }}</div>
           </div>
           <div class="balance-arrow">
             <el-icon :size="20"><ArrowRight /></el-icon>
@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Document, Location, ShoppingCart, Wallet, ArrowRight, Bell, CircleCheck, Collection, Discount } from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { useGiftCardStore } from '@/stores/giftCard';
@@ -133,6 +133,15 @@ import { notificationsApi } from '@/api';
 const userStore = useUserStore();
 const giftCardStore = useGiftCardStore();
 const unreadCount = ref(0);
+
+const user = computed(() => userStore.user.value);
+const isLoggedIn = computed(() => userStore.isLoggedIn.value);
+const memberLevel = computed(() => userStore.memberLevel.value);
+const memberProgress = computed(() => userStore.memberProgress.value);
+const memberLevels = computed(() => userStore.memberLevels.value ?? []);
+const totalSpentDisplay = computed(() => (userStore.totalSpent.value ?? 0).toFixed(2));
+const amountToNextDisplay = computed(() => (memberProgress.value?.amountToNext ?? 0).toFixed(2));
+const giftCardBalance = computed(() => giftCardStore.totalBalance.value ?? '0.00');
 
 onMounted(async () => {
   await userStore.fetchUser();
