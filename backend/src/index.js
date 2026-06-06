@@ -49,9 +49,24 @@ app.use((err, req, res, next) => {
   res.status(500).json({ code: 500, message: '服务器内部错误' });
 });
 
+async function connectWithRetry(maxRetries = 30, delayMs = 2000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await sequelize.authenticate();
+      return;
+    } catch (err) {
+      logger.warn(`Database connection attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      if (attempt === maxRetries) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
 async function start() {
   try {
-    await sequelize.authenticate();
+    await connectWithRetry();
     logger.info('Database connected');
     await sequelize.sync({ alter: true });
     logger.info('Database synced');

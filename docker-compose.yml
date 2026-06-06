@@ -11,18 +11,43 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
     ports:
       - "${MYSQL_HOST_PORT:-3307}:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      test: ["CMD-SHELL", "mysql -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1' > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 20
       start_period: 60s
 
+  db-init:
+    image: mysql:8.0
+    container_name: ecommerce-db-init
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecommerce}
+      MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce123}
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        mysql -h db -uroot -p"$$MYSQL_ROOT_PASSWORD" <<EOSQL
+        CREATE USER IF NOT EXISTS '$$MYSQL_USER'@'%' IDENTIFIED BY '$$MYSQL_PASSWORD';
+        GRANT ALL PRIVILEGES ON \`$$MYSQL_DATABASE\`.* TO '$$MYSQL_USER'@'%';
+        FLUSH PRIVILEGES;
+        EOSQL
+        echo "Database user privileges ensured"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   backend:
     build: ./backend
     container_name: ecommerce-backend
+    restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -36,8 +61,8 @@ services:
     ports:
       - "${BACKEND_HOST_PORT:-8227}:${BACKEND_PORT:-8227}"
     depends_on:
-      db:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend
